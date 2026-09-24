@@ -8,6 +8,9 @@
 I will be responsible for the full implementation, testing, documentation, and presentation for this project.
 
 ### Project Pitch
+
+Options are a type of financial tool people use to make predictions about how a stock may move in the future. Their value depends on things like the stock price, the price level being targeted, and how much time is left before the option expires. One important measurement used in options is implied volatility, which reflects how much movement the market expects from the stock.
+
 OptionSurface is an interactive 3D visualization tool for exploring options implied volatility. The application will display a volatility surface using **strike price**, **time to expiration**, and **implied volatility** as the three dimensions.
 
 The goal is to make patterns such as volatility smile and skew easier to understand than with a traditional table or 2D chart. Users will be able to rotate, zoom, and explore the surface interactively.
