@@ -1,0 +1,38 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>OptionSurface</title>
+
+  <meta
+    name="description"
+    content="Interactive 3D Options Volatility Surface Explorer"
+  >
+
+  <meta name="author" content="Rishi Patel">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>OptionSurface</h1>
+    <p>Interactive 3D Options Volatility Surface Explorer</p>
+  </header>
+
+  <main>
+    <canvas id="glCanvas" width="960" height="540"></canvas>
+
+    <p id="status">Initializing WebGL2...</p>
+  </main>
+
+  <script src="vendor/gl-matrix-min.js"></script>
+  <script type="module" src="js/main.js"></script>
+
+</body>
+
+</html>
