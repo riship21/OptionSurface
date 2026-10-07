@@ -1,4 +1,6 @@
 import { ShaderProgram } from './shader-program.js';
+import { buildSurfaceMesh } from './surface-mesh.js';
+import { loadVolatilityData } from './volatility-data.js';
 
 
 export class Renderer {
@@ -7,41 +9,68 @@ export class Renderer {
 
     this.canvas = canvas;
 
-    this.gl = canvas.getContext('webgl2');
+    this.gl =
+      canvas.getContext('webgl2');
 
     if (this.gl === null) {
-      throw new Error('Unable to initialize WebGL2.');
+      throw new Error(
+        'Unable to initialize WebGL2.'
+      );
     }
 
     this.shader = null;
 
     this.vertexArray = null;
 
-    this.projectionMatrix = glMatrix.mat4.create();
+    this.indexCount = 0;
 
-    this.modelViewMatrix = glMatrix.mat4.create();
+    this.projectionMatrix =
+      glMatrix.mat4.create();
+
+    this.modelViewMatrix =
+      glMatrix.mat4.create();
   }
 
 
   async initialize() {
 
-    const vertexSource = await this.loadText(
-      'shaders/surface.vert'
-    );
+    const vertexSource =
+      await this.loadText(
+        'shaders/surface.vert'
+      );
 
-    const fragmentSource = await this.loadText(
-      'shaders/surface.frag'
-    );
+    const fragmentSource =
+      await this.loadText(
+        'shaders/surface.frag'
+      );
 
-    this.shader = new ShaderProgram(
-      this.gl,
-      vertexSource,
-      fragmentSource
-    );
 
-    this.createTestTriangle();
+    this.shader =
+      new ShaderProgram(
+        this.gl,
+        vertexSource,
+        fragmentSource
+      );
 
-    const gl = this.gl;
+
+    const volatilityData =
+      await loadVolatilityData(
+        'data/sample-surface.json'
+      );
+
+
+    const mesh =
+      buildSurfaceMesh(
+        volatilityData
+      );
+
+
+    this.createSurface(mesh);
+
+
+    const gl =
+      this.gl;
+
 
     gl.clearColor(
       0.05,
@@ -50,45 +79,60 @@ export class Renderer {
       1.0
     );
 
-    gl.enable(gl.DEPTH_TEST);
 
-    gl.depthFunc(gl.LEQUAL);
+    gl.enable(
+      gl.DEPTH_TEST
+    );
+
+
+    gl.depthFunc(
+      gl.LEQUAL
+    );
   }
 
 
-  createTestTriangle() {
+  createSurface(mesh) {
 
-    const gl = this.gl;
+    const gl =
+      this.gl;
 
-    const vertices = new Float32Array([
-       0.0,  1.0, 0.0,
-      -1.0, -1.0, 0.0,
-       1.0, -1.0, 0.0
-    ]);
 
-    this.vertexArray = gl.createVertexArray();
+    this.vertexArray =
+      gl.createVertexArray();
 
-    gl.bindVertexArray(this.vertexArray);
 
-    const positionBuffer = gl.createBuffer();
+    gl.bindVertexArray(
+      this.vertexArray
+    );
+
+
+    const positionBuffer =
+      gl.createBuffer();
+
 
     gl.bindBuffer(
       gl.ARRAY_BUFFER,
       positionBuffer
     );
 
+
     gl.bufferData(
       gl.ARRAY_BUFFER,
-      vertices,
+      mesh.vertices,
       gl.STATIC_DRAW
     );
 
+
     const positionLocation =
-      this.shader.getAttributeLocation('aPosition');
+      this.shader.getAttributeLocation(
+        'aPosition'
+      );
+
 
     gl.enableVertexAttribArray(
       positionLocation
     );
+
 
     gl.vertexAttribPointer(
       positionLocation,
@@ -99,15 +143,42 @@ export class Renderer {
       0
     );
 
-    gl.bindVertexArray(null);
+
+    const indexBuffer =
+      gl.createBuffer();
+
+
+    gl.bindBuffer(
+      gl.ELEMENT_ARRAY_BUFFER,
+      indexBuffer
+    );
+
+
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      mesh.indices,
+      gl.STATIC_DRAW
+    );
+
+
+    this.indexCount =
+      mesh.indices.length;
+
+
+    gl.bindVertexArray(
+      null
+    );
   }
 
 
   render(time) {
 
-    const gl = this.gl;
+    const gl =
+      this.gl;
+
 
     this.resizeCanvas();
+
 
     gl.viewport(
       0,
@@ -116,14 +187,17 @@ export class Renderer {
       gl.canvas.height
     );
 
+
     gl.clear(
       gl.COLOR_BUFFER_BIT |
       gl.DEPTH_BUFFER_BIT
     );
 
+
     const aspect =
       gl.canvas.width /
       gl.canvas.height;
+
 
     glMatrix.mat4.perspective(
       this.projectionMatrix,
@@ -137,20 +211,29 @@ export class Renderer {
     const modelMatrix =
       glMatrix.mat4.create();
 
-    glMatrix.mat4.rotateZ(
+
+    glMatrix.mat4.rotateX(
       modelMatrix,
       modelMatrix,
-      time * 0.5
+      -0.55
+    );
+
+
+    glMatrix.mat4.rotateY(
+      modelMatrix,
+      modelMatrix,
+      time * 0.15
     );
 
 
     const viewMatrix =
       glMatrix.mat4.create();
 
+
     glMatrix.mat4.lookAt(
       viewMatrix,
-      [0.0, 0.0, 4.0],
-      [0.0, 0.0, 0.0],
+      [0.0, 2.5, 6.0],
+      [0.0, 0.6, 0.0],
       [0.0, 1.0, 0.0]
     );
 
@@ -164,6 +247,7 @@ export class Renderer {
 
     this.shader.use();
 
+
     gl.uniformMatrix4fv(
       this.shader.getUniformLocation(
         'uProjectionMatrix'
@@ -171,6 +255,7 @@ export class Renderer {
       false,
       this.projectionMatrix
     );
+
 
     gl.uniformMatrix4fv(
       this.shader.getUniformLocation(
@@ -185,19 +270,26 @@ export class Renderer {
       this.vertexArray
     );
 
-    gl.drawArrays(
+
+    gl.drawElements(
       gl.TRIANGLES,
-      0,
-      3
+      this.indexCount,
+      gl.UNSIGNED_SHORT,
+      0
     );
 
-    gl.bindVertexArray(null);
+
+    gl.bindVertexArray(
+      null
+    );
   }
 
 
   resizeCanvas() {
 
-    const canvas = this.canvas;
+    const canvas =
+      this.canvas;
+
 
     const displayWidth =
       canvas.clientWidth;
@@ -205,27 +297,34 @@ export class Renderer {
     const displayHeight =
       canvas.clientHeight;
 
+
     if (
       canvas.width !== displayWidth ||
       canvas.height !== displayHeight
     ) {
 
-      canvas.width = displayWidth;
+      canvas.width =
+        displayWidth;
 
-      canvas.height = displayHeight;
+      canvas.height =
+        displayHeight;
     }
   }
 
 
   async loadText(path) {
 
-    const response = await fetch(path);
+    const response =
+      await fetch(path);
+
 
     if (!response.ok) {
+
       throw new Error(
         `Unable to load ${path}`
       );
     }
+
 
     return await response.text();
   }
