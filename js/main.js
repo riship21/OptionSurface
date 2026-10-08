@@ -17,7 +17,7 @@ async function main() {
     await renderer.initialize();
 
     status.textContent =
-      'WebGL2 rendering pipeline running.';
+      'Drag to rotate. Scroll to zoom.';
 
 
     function render(now) {

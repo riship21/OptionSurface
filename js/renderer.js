@@ -1,6 +1,7 @@
 import { ShaderProgram } from './shader-program.js';
 import { buildSurfaceMesh } from './surface-mesh.js';
 import { loadVolatilityData } from './volatility-data.js';
+import { OrbitCamera } from './camera.js';
 
 
 export class Renderer {
@@ -18,17 +19,23 @@ export class Renderer {
       );
     }
 
+
     this.shader = null;
 
     this.vertexArray = null;
 
     this.indexCount = 0;
 
+
     this.projectionMatrix =
       glMatrix.mat4.create();
 
     this.modelViewMatrix =
       glMatrix.mat4.create();
+
+
+    this.camera =
+      new OrbitCamera(canvas);
   }
 
 
@@ -38,6 +45,7 @@ export class Renderer {
       await this.loadText(
         'shaders/surface.vert'
       );
+
 
     const fragmentSource =
       await this.loadText(
@@ -65,7 +73,9 @@ export class Renderer {
       );
 
 
-    this.createSurface(mesh);
+    this.createSurface(
+      mesh
+    );
 
 
     const gl =
@@ -171,7 +181,7 @@ export class Renderer {
   }
 
 
-  render(time) {
+  render() {
 
     const gl =
       this.gl;
@@ -212,30 +222,8 @@ export class Renderer {
       glMatrix.mat4.create();
 
 
-    glMatrix.mat4.rotateX(
-      modelMatrix,
-      modelMatrix,
-      -0.55
-    );
-
-
-    glMatrix.mat4.rotateY(
-      modelMatrix,
-      modelMatrix,
-      time * 0.15
-    );
-
-
     const viewMatrix =
-      glMatrix.mat4.create();
-
-
-    glMatrix.mat4.lookAt(
-      viewMatrix,
-      [0.0, 2.5, 6.0],
-      [0.0, 0.6, 0.0],
-      [0.0, 1.0, 0.0]
-    );
+      this.camera.getViewMatrix();
 
 
     glMatrix.mat4.multiply(
