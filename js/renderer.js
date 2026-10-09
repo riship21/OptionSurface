@@ -13,7 +13,9 @@ export class Renderer {
     this.gl =
       canvas.getContext('webgl2');
 
+
     if (this.gl === null) {
+
       throw new Error(
         'Unable to initialize WebGL2.'
       );
@@ -30,8 +32,13 @@ export class Renderer {
     this.projectionMatrix =
       glMatrix.mat4.create();
 
+
     this.modelViewMatrix =
       glMatrix.mat4.create();
+
+
+    this.normalMatrix =
+      glMatrix.mat3.create();
 
 
     this.camera =
@@ -154,6 +161,44 @@ export class Renderer {
     );
 
 
+    const normalBuffer =
+      gl.createBuffer();
+
+
+    gl.bindBuffer(
+      gl.ARRAY_BUFFER,
+      normalBuffer
+    );
+
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      mesh.normals,
+      gl.STATIC_DRAW
+    );
+
+
+    const normalLocation =
+      this.shader.getAttributeLocation(
+        'aNormal'
+      );
+
+
+    gl.enableVertexAttribArray(
+      normalLocation
+    );
+
+
+    gl.vertexAttribPointer(
+      normalLocation,
+      3,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+
     const indexBuffer =
       gl.createBuffer();
 
@@ -233,24 +278,62 @@ export class Renderer {
     );
 
 
+    glMatrix.mat3.normalFromMat4(
+      this.normalMatrix,
+      this.modelViewMatrix
+    );
+
+
     this.shader.use();
 
 
     gl.uniformMatrix4fv(
+
       this.shader.getUniformLocation(
         'uProjectionMatrix'
       ),
+
       false,
+
       this.projectionMatrix
     );
 
 
     gl.uniformMatrix4fv(
+
       this.shader.getUniformLocation(
         'uModelViewMatrix'
       ),
+
       false,
+
       this.modelViewMatrix
+    );
+
+
+    gl.uniformMatrix3fv(
+
+      this.shader.getUniformLocation(
+        'uNormalMatrix'
+      ),
+
+      false,
+
+      this.normalMatrix
+    );
+
+
+    gl.uniform3fv(
+
+      this.shader.getUniformLocation(
+        'uLightPosition'
+      ),
+
+      [
+        0.0,
+        2.5,
+        4.0
+      ]
     );
 
 
@@ -281,6 +364,7 @@ export class Renderer {
 
     const displayWidth =
       canvas.clientWidth;
+
 
     const displayHeight =
       canvas.clientHeight;

@@ -7,7 +7,6 @@ export function buildSurfaceMesh(data) {
   const vertices = [];
   const indices = [];
 
-
   const minStrike = Math.min(...strikes);
   const maxStrike = Math.max(...strikes);
 
@@ -105,22 +104,210 @@ export function buildSurfaceMesh(data) {
 
       indices.push(
         topLeft,
-        bottomLeft,
-        topRight
+        topRight,
+        bottomLeft
       );
 
 
       indices.push(
         topRight,
-        bottomLeft,
-        bottomRight
+        bottomRight,
+        bottomLeft
       );
     }
   }
 
 
+  const normals =
+    calculateVertexNormals(
+      vertices,
+      indices
+    );
+
+
   return {
-    vertices: new Float32Array(vertices),
-    indices: new Uint16Array(indices)
+
+    vertices:
+      new Float32Array(vertices),
+
+    normals:
+      new Float32Array(normals),
+
+    indices:
+      new Uint16Array(indices)
+
   };
+}
+
+
+function calculateVertexNormals(
+  vertices,
+  indices
+) {
+
+  const normals =
+    new Array(vertices.length).fill(0.0);
+
+
+  for (
+    let index = 0;
+    index < indices.length;
+    index += 3
+  ) {
+
+    const vertexIndex0 =
+      indices[index];
+
+    const vertexIndex1 =
+      indices[index + 1];
+
+    const vertexIndex2 =
+      indices[index + 2];
+
+
+    const offset0 =
+      vertexIndex0 * 3;
+
+    const offset1 =
+      vertexIndex1 * 3;
+
+    const offset2 =
+      vertexIndex2 * 3;
+
+
+    const p0 = [
+      vertices[offset0],
+      vertices[offset0 + 1],
+      vertices[offset0 + 2]
+    ];
+
+
+    const p1 = [
+      vertices[offset1],
+      vertices[offset1 + 1],
+      vertices[offset1 + 2]
+    ];
+
+
+    const p2 = [
+      vertices[offset2],
+      vertices[offset2 + 1],
+      vertices[offset2 + 2]
+    ];
+
+
+    const edge1 = [
+      p1[0] - p0[0],
+      p1[1] - p0[1],
+      p1[2] - p0[2]
+    ];
+
+
+    const edge2 = [
+      p2[0] - p0[0],
+      p2[1] - p0[1],
+      p2[2] - p0[2]
+    ];
+
+
+    const faceNormal = [
+
+      edge1[1] * edge2[2] -
+      edge1[2] * edge2[1],
+
+      edge1[2] * edge2[0] -
+      edge1[0] * edge2[2],
+
+      edge1[0] * edge2[1] -
+      edge1[1] * edge2[0]
+
+    ];
+
+
+    addNormal(
+      normals,
+      vertexIndex0,
+      faceNormal
+    );
+
+
+    addNormal(
+      normals,
+      vertexIndex1,
+      faceNormal
+    );
+
+
+    addNormal(
+      normals,
+      vertexIndex2,
+      faceNormal
+    );
+  }
+
+
+  for (
+    let vertexIndex = 0;
+    vertexIndex < vertices.length / 3;
+    vertexIndex++
+  ) {
+
+    const offset =
+      vertexIndex * 3;
+
+
+    const x =
+      normals[offset];
+
+    const y =
+      normals[offset + 1];
+
+    const z =
+      normals[offset + 2];
+
+
+    const length =
+      Math.sqrt(
+        x * x +
+        y * y +
+        z * z
+      );
+
+
+    if (length > 0.0) {
+
+      normals[offset] =
+        x / length;
+
+      normals[offset + 1] =
+        y / length;
+
+      normals[offset + 2] =
+        z / length;
+    }
+  }
+
+
+  return normals;
+}
+
+
+function addNormal(
+  normals,
+  vertexIndex,
+  faceNormal
+) {
+
+  const offset =
+    vertexIndex * 3;
+
+
+  normals[offset] +=
+    faceNormal[0];
+
+  normals[offset + 1] +=
+    faceNormal[1];
+
+  normals[offset + 2] +=
+    faceNormal[2];
 }
