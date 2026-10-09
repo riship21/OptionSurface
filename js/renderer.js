@@ -4,437 +4,190 @@ import { loadVolatilityData } from './volatility-data.js';
 import { OrbitCamera } from './camera.js';
 import { buildAxisGrid } from './axis-grid.js';
 
-
 export class Renderer {
-
   constructor(canvas) {
-
     this.canvas = canvas;
-
-    this.gl =
-      canvas.getContext('webgl2');
-
+    this.gl = canvas.getContext('webgl2');
 
     if (this.gl === null) {
-
-      throw new Error(
-        'Unable to initialize WebGL2.'
-      );
+      throw new Error('Unable to initialize WebGL2.');
     }
 
-
     this.surfaceShader = null;
-
     this.lineShader = null;
 
-
     this.surfaceVertexArray = null;
-
     this.gridVertexArray = null;
-
+    this.wireframeVertexArray = null;
 
     this.surfaceIndexCount = 0;
-
     this.gridVertexCount = 0;
+    this.wireframeIndexCount = 0;
 
+    this.showSurface = true;
+    this.showWireframe = false;
 
-    this.projectionMatrix =
-      glMatrix.mat4.create();
+    this.projectionMatrix = glMatrix.mat4.create();
+    this.modelViewMatrix = glMatrix.mat4.create();
+    this.normalMatrix = glMatrix.mat3.create();
 
-
-    this.modelViewMatrix =
-      glMatrix.mat4.create();
-
-
-    this.normalMatrix =
-      glMatrix.mat3.create();
-
-
-    this.camera =
-      new OrbitCamera(canvas);
+    this.camera = new OrbitCamera(canvas);
   }
-
 
   async initialize() {
+    const surfaceVertexSource = await this.loadText('shaders/surface.vert');
+    const surfaceFragmentSource = await this.loadText('shaders/surface.frag');
+    const lineVertexSource = await this.loadText('shaders/line.vert');
+    const lineFragmentSource = await this.loadText('shaders/line.frag');
 
-    const surfaceVertexSource =
-      await this.loadText(
-        'shaders/surface.vert'
-      );
-
-
-    const surfaceFragmentSource =
-      await this.loadText(
-        'shaders/surface.frag'
-      );
-
-
-    const lineVertexSource =
-      await this.loadText(
-        'shaders/line.vert'
-      );
-
-
-    const lineFragmentSource =
-      await this.loadText(
-        'shaders/line.frag'
-      );
-
-
-    this.surfaceShader =
-      new ShaderProgram(
-        this.gl,
-        surfaceVertexSource,
-        surfaceFragmentSource
-      );
-
-
-    this.lineShader =
-      new ShaderProgram(
-        this.gl,
-        lineVertexSource,
-        lineFragmentSource
-      );
-
-
-    const volatilityData =
-      await loadVolatilityData(
-        'data/sample-surface.json'
-      );
-
-
-    const surfaceMesh =
-      buildSurfaceMesh(
-        volatilityData
-      );
-
-
-    this.createSurface(
-      surfaceMesh
+    this.surfaceShader = new ShaderProgram(
+      this.gl,
+      surfaceVertexSource,
+      surfaceFragmentSource
     );
 
-
-    const axisGrid =
-      buildAxisGrid();
-
-
-    this.createAxisGrid(
-      axisGrid
+    this.lineShader = new ShaderProgram(
+      this.gl,
+      lineVertexSource,
+      lineFragmentSource
     );
 
+    const volatilityData = await loadVolatilityData('data/sample-surface.json');
+    const surfaceMesh = buildSurfaceMesh(volatilityData);
 
-    const gl =
-      this.gl;
+    this.createSurface(surfaceMesh);
+    this.createWireframe(surfaceMesh);
 
+    const axisGrid = buildAxisGrid();
+    this.createAxisGrid(axisGrid);
 
-    gl.clearColor(
-      0.05,
-      0.08,
-      0.12,
-      1.0
-    );
+    const gl = this.gl;
 
-
-    gl.enable(
-      gl.DEPTH_TEST
-    );
-
-
-    gl.depthFunc(
-      gl.LEQUAL
-    );
+    gl.clearColor(0.05, 0.08, 0.12, 1.0);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
   }
-
 
   createSurface(mesh) {
+    const gl = this.gl;
 
-    const gl =
-      this.gl;
+    this.surfaceVertexArray = gl.createVertexArray();
+    gl.bindVertexArray(this.surfaceVertexArray);
 
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.vertices, gl.STATIC_DRAW);
 
-    this.surfaceVertexArray =
-      gl.createVertexArray();
+    const positionLocation = this.surfaceShader.getAttributeLocation('aPosition');
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.normals, gl.STATIC_DRAW);
 
-    gl.bindVertexArray(
-      this.surfaceVertexArray
-    );
+    const normalLocation = this.surfaceShader.getAttributeLocation('aNormal');
+    gl.enableVertexAttribArray(normalLocation);
+    gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
 
+    const ivBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, ivBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.ivValues, gl.STATIC_DRAW);
 
-    const positionBuffer =
-      gl.createBuffer();
+    const ivLocation = this.surfaceShader.getAttributeLocation('aIV');
+    gl.enableVertexAttribArray(ivLocation);
+    gl.vertexAttribPointer(ivLocation, 1, gl.FLOAT, false, 0, 0);
 
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
 
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      positionBuffer
-    );
+    this.surfaceIndexCount = mesh.indices.length;
 
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      mesh.vertices,
-      gl.STATIC_DRAW
-    );
-
-
-    const positionLocation =
-      this.surfaceShader
-        .getAttributeLocation(
-          'aPosition'
-        );
-
-
-    gl.enableVertexAttribArray(
-      positionLocation
-    );
-
-
-    gl.vertexAttribPointer(
-      positionLocation,
-      3,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-
-    const normalBuffer =
-      gl.createBuffer();
-
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      normalBuffer
-    );
-
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      mesh.normals,
-      gl.STATIC_DRAW
-    );
-
-
-    const normalLocation =
-      this.surfaceShader
-        .getAttributeLocation(
-          'aNormal'
-        );
-
-
-    gl.enableVertexAttribArray(
-      normalLocation
-    );
-
-
-    gl.vertexAttribPointer(
-      normalLocation,
-      3,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-
-    const ivBuffer =
-      gl.createBuffer();
-
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      ivBuffer
-    );
-
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      mesh.ivValues,
-      gl.STATIC_DRAW
-    );
-
-
-    const ivLocation =
-      this.surfaceShader
-        .getAttributeLocation(
-          'aIV'
-        );
-
-
-    gl.enableVertexAttribArray(
-      ivLocation
-    );
-
-
-    gl.vertexAttribPointer(
-      ivLocation,
-      1,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-
-    const indexBuffer =
-      gl.createBuffer();
-
-
-    gl.bindBuffer(
-      gl.ELEMENT_ARRAY_BUFFER,
-      indexBuffer
-    );
-
-
-    gl.bufferData(
-      gl.ELEMENT_ARRAY_BUFFER,
-      mesh.indices,
-      gl.STATIC_DRAW
-    );
-
-
-    this.surfaceIndexCount =
-      mesh.indices.length;
-
-
-    gl.bindVertexArray(
-      null
-    );
+    gl.bindVertexArray(null);
   }
 
+  createWireframe(mesh) {
+    const gl = this.gl;
+
+    this.wireframeVertexArray = gl.createVertexArray();
+    gl.bindVertexArray(this.wireframeVertexArray);
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.vertices, gl.STATIC_DRAW);
+
+    const positionLocation = this.lineShader.getAttributeLocation('aPosition');
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+
+    const vertexCount = mesh.vertices.length / 3;
+    const colors = new Float32Array(vertexCount * 3);
+
+    for (let vertex = 0; vertex < vertexCount; vertex++) {
+      const offset = vertex * 3;
+      colors[offset] = 0.90;
+      colors[offset + 1] = 0.94;
+      colors[offset + 2] = 1.00;
+    }
+
+    const colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+
+    const colorLocation = this.lineShader.getAttributeLocation('aColor');
+    gl.enableVertexAttribArray(colorLocation);
+    gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      mesh.wireframeIndices,
+      gl.STATIC_DRAW
+    );
+
+    this.wireframeIndexCount = mesh.wireframeIndices.length;
+
+    gl.bindVertexArray(null);
+  }
 
   createAxisGrid(grid) {
+    const gl = this.gl;
 
-    const gl =
-      this.gl;
+    this.gridVertexArray = gl.createVertexArray();
+    gl.bindVertexArray(this.gridVertexArray);
 
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, grid.vertices, gl.STATIC_DRAW);
 
-    this.gridVertexArray =
-      gl.createVertexArray();
+    const positionLocation = this.lineShader.getAttributeLocation('aPosition');
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
+    const colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, grid.colors, gl.STATIC_DRAW);
 
-    gl.bindVertexArray(
-      this.gridVertexArray
-    );
+    const colorLocation = this.lineShader.getAttributeLocation('aColor');
+    gl.enableVertexAttribArray(colorLocation);
+    gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, 0, 0);
 
+    this.gridVertexCount = grid.vertexCount;
 
-    const positionBuffer =
-      gl.createBuffer();
-
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      positionBuffer
-    );
-
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      grid.vertices,
-      gl.STATIC_DRAW
-    );
-
-
-    const positionLocation =
-      this.lineShader
-        .getAttributeLocation(
-          'aPosition'
-        );
-
-
-    gl.enableVertexAttribArray(
-      positionLocation
-    );
-
-
-    gl.vertexAttribPointer(
-      positionLocation,
-      3,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-
-    const colorBuffer =
-      gl.createBuffer();
-
-
-    gl.bindBuffer(
-      gl.ARRAY_BUFFER,
-      colorBuffer
-    );
-
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      grid.colors,
-      gl.STATIC_DRAW
-    );
-
-
-    const colorLocation =
-      this.lineShader
-        .getAttributeLocation(
-          'aColor'
-        );
-
-
-    gl.enableVertexAttribArray(
-      colorLocation
-    );
-
-
-    gl.vertexAttribPointer(
-      colorLocation,
-      3,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    );
-
-
-    this.gridVertexCount =
-      grid.vertexCount;
-
-
-    gl.bindVertexArray(
-      null
-    );
+    gl.bindVertexArray(null);
   }
 
-
   render() {
-
-    const gl =
-      this.gl;
-
+    const gl = this.gl;
 
     this.resizeCanvas();
 
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.viewport(
-      0,
-      0,
-      gl.canvas.width,
-      gl.canvas.height
-    );
-
-
-    gl.clear(
-      gl.COLOR_BUFFER_BIT |
-      gl.DEPTH_BUFFER_BIT
-    );
-
-
-    const aspect =
-      gl.canvas.width /
-      gl.canvas.height;
-
+    const aspect = gl.canvas.width / gl.canvas.height;
 
     glMatrix.mat4.perspective(
       this.projectionMatrix,
@@ -444,14 +197,8 @@ export class Renderer {
       100.0
     );
 
-
-    const modelMatrix =
-      glMatrix.mat4.create();
-
-
-    const viewMatrix =
-      this.camera.getViewMatrix();
-
+    const modelMatrix = glMatrix.mat4.create();
+    const viewMatrix = this.camera.getViewMatrix();
 
     glMatrix.mat4.multiply(
       this.modelViewMatrix,
@@ -459,86 +206,54 @@ export class Renderer {
       modelMatrix
     );
 
-
     glMatrix.mat3.normalFromMat4(
       this.normalMatrix,
       this.modelViewMatrix
     );
 
+    if (this.showSurface) {
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.polygonOffset(1.0, 1.0);
+      this.drawSurface();
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+    }
 
-    this.drawSurface();
+    if (this.showWireframe) {
+      this.drawWireframe();
+    }
 
     this.drawAxisGrid();
   }
 
-
   drawSurface() {
-
-    const gl =
-      this.gl;
-
+    const gl = this.gl;
 
     this.surfaceShader.use();
 
-
     gl.uniformMatrix4fv(
-
-      this.surfaceShader
-        .getUniformLocation(
-          'uProjectionMatrix'
-        ),
-
+      this.surfaceShader.getUniformLocation('uProjectionMatrix'),
       false,
-
       this.projectionMatrix
     );
 
-
     gl.uniformMatrix4fv(
-
-      this.surfaceShader
-        .getUniformLocation(
-          'uModelViewMatrix'
-        ),
-
+      this.surfaceShader.getUniformLocation('uModelViewMatrix'),
       false,
-
       this.modelViewMatrix
     );
 
-
     gl.uniformMatrix3fv(
-
-      this.surfaceShader
-        .getUniformLocation(
-          'uNormalMatrix'
-        ),
-
+      this.surfaceShader.getUniformLocation('uNormalMatrix'),
       false,
-
       this.normalMatrix
     );
 
-
     gl.uniform3fv(
-
-      this.surfaceShader
-        .getUniformLocation(
-          'uLightPosition'
-        ),
-
-      [
-        0.0,
-        2.5,
-        4.0
-      ]
+      this.surfaceShader.getUniformLocation('uLightPosition'),
+      [0.0, 2.5, 4.0]
     );
 
-
-    gl.bindVertexArray(
-      this.surfaceVertexArray
-    );
-
+    gl.bindVertexArray(this.surfaceVertexArray);
 
     gl.drawElements(
       gl.TRIANGLES,
@@ -547,52 +262,56 @@ export class Renderer {
       0
     );
 
-
-    gl.bindVertexArray(
-      null
-    );
+    gl.bindVertexArray(null);
   }
 
-
-  drawAxisGrid() {
-
-    const gl =
-      this.gl;
-
+  drawWireframe() {
+    const gl = this.gl;
 
     this.lineShader.use();
 
-
     gl.uniformMatrix4fv(
-
-      this.lineShader
-        .getUniformLocation(
-          'uProjectionMatrix'
-        ),
-
+      this.lineShader.getUniformLocation('uProjectionMatrix'),
       false,
-
       this.projectionMatrix
     );
 
-
     gl.uniformMatrix4fv(
-
-      this.lineShader
-        .getUniformLocation(
-          'uModelViewMatrix'
-        ),
-
+      this.lineShader.getUniformLocation('uModelViewMatrix'),
       false,
-
       this.modelViewMatrix
     );
 
+    gl.bindVertexArray(this.wireframeVertexArray);
 
-    gl.bindVertexArray(
-      this.gridVertexArray
+    gl.drawElements(
+      gl.LINES,
+      this.wireframeIndexCount,
+      gl.UNSIGNED_SHORT,
+      0
     );
 
+    gl.bindVertexArray(null);
+  }
+
+  drawAxisGrid() {
+    const gl = this.gl;
+
+    this.lineShader.use();
+
+    gl.uniformMatrix4fv(
+      this.lineShader.getUniformLocation('uProjectionMatrix'),
+      false,
+      this.projectionMatrix
+    );
+
+    gl.uniformMatrix4fv(
+      this.lineShader.getUniformLocation('uModelViewMatrix'),
+      false,
+      this.modelViewMatrix
+    );
+
+    gl.bindVertexArray(this.gridVertexArray);
 
     gl.drawArrays(
       gl.LINES,
@@ -600,56 +319,38 @@ export class Renderer {
       this.gridVertexCount
     );
 
-
-    gl.bindVertexArray(
-      null
-    );
+    gl.bindVertexArray(null);
   }
 
+  setSurfaceVisible(visible) {
+    this.showSurface = visible;
+  }
+
+  setWireframeVisible(visible) {
+    this.showWireframe = visible;
+  }
 
   resizeCanvas() {
-
-    const canvas =
-      this.canvas;
-
-
-    const displayWidth =
-      canvas.clientWidth;
-
-
-    const displayHeight =
-      canvas.clientHeight;
-
+    const canvas = this.canvas;
+    const displayWidth = canvas.clientWidth;
+    const displayHeight = canvas.clientHeight;
 
     if (
       canvas.width !== displayWidth ||
       canvas.height !== displayHeight
     ) {
-
-      canvas.width =
-        displayWidth;
-
-      canvas.height =
-        displayHeight;
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
     }
   }
 
-
   async loadText(path) {
-
-    const response =
-      await fetch(path);
-
+    const response = await fetch(path);
 
     if (!response.ok) {
-
-      throw new Error(
-        `Unable to load ${path}`
-      );
+      throw new Error(`Unable to load ${path}`);
     }
-
 
     return await response.text();
   }
-
 }

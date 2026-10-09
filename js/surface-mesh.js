@@ -1,5 +1,4 @@
 export function buildSurfaceMesh(data) {
-
   const strikes = data.strikes;
   const expirations = data.expirations;
   const volatility = data.volatility;
@@ -19,313 +18,131 @@ export function buildSurfaceMesh(data) {
   const minIV = Math.min(...allIVValues);
   const maxIV = Math.max(...allIVValues);
 
+  for (let strikeIndex = 0; strikeIndex < strikes.length; strikeIndex++) {
+    for (let expirationIndex = 0; expirationIndex < expirations.length; expirationIndex++) {
+      const strike = strikes[strikeIndex];
+      const expiration = expirations[expirationIndex];
+      const iv = volatility[strikeIndex][expirationIndex];
 
-  for (
-    let strikeIndex = 0;
-    strikeIndex < strikes.length;
-    strikeIndex++
-  ) {
+      const normalizedIV = (iv - minIV) / (maxIV - minIV);
 
-    for (
-      let expirationIndex = 0;
-      expirationIndex < expirations.length;
-      expirationIndex++
-    ) {
+      const x = (((strike - minStrike) / (maxStrike - minStrike)) - 0.5) * 4.0;
+      const z = (((expiration - minExpiration) / (maxExpiration - minExpiration)) - 0.5) * 4.0;
+      const y = normalizedIV * 1.5;
 
-      const strike =
-        strikes[strikeIndex];
-
-      const expiration =
-        expirations[expirationIndex];
-
-      const iv =
-        volatility[strikeIndex][expirationIndex];
-
-
-      const normalizedIV =
-        (iv - minIV) /
-        (maxIV - minIV);
-
-
-      const x =
-        (
-          (strike - minStrike) /
-          (maxStrike - minStrike) -
-          0.5
-        ) * 4.0;
-
-
-      const z =
-        (
-          (expiration - minExpiration) /
-          (maxExpiration - minExpiration) -
-          0.5
-        ) * 4.0;
-
-
-      const y =
-        normalizedIV *
-        1.5;
-
-
-      vertices.push(
-        x,
-        y,
-        z
-      );
-
-
-      ivValues.push(
-        normalizedIV
-      );
+      vertices.push(x, y, z);
+      ivValues.push(normalizedIV);
     }
   }
 
+  const columns = expirations.length;
 
-  const columns =
-    expirations.length;
+  for (let row = 0; row < strikes.length - 1; row++) {
+    for (let column = 0; column < expirations.length - 1; column++) {
+      const topLeft = row * columns + column;
+      const topRight = topLeft + 1;
+      const bottomLeft = (row + 1) * columns + column;
+      const bottomRight = bottomLeft + 1;
 
-
-  for (
-    let row = 0;
-    row < strikes.length - 1;
-    row++
-  ) {
-
-    for (
-      let column = 0;
-      column < expirations.length - 1;
-      column++
-    ) {
-
-      const topLeft =
-        row * columns + column;
-
-      const topRight =
-        topLeft + 1;
-
-      const bottomLeft =
-        (row + 1) * columns + column;
-
-      const bottomRight =
-        bottomLeft + 1;
-
-
-      indices.push(
-        topLeft,
-        topRight,
-        bottomLeft
-      );
-
-
-      indices.push(
-        topRight,
-        bottomRight,
-        bottomLeft
-      );
+      indices.push(topLeft, topRight, bottomLeft);
+      indices.push(topRight, bottomRight, bottomLeft);
     }
   }
 
-
-  const normals =
-    calculateVertexNormals(
-      vertices,
-      indices
-    );
-
+  const normals = calculateVertexNormals(vertices, indices);
+  const wireframeIndices = buildWireframeIndices(indices);
 
   return {
-
-    vertices:
-      new Float32Array(vertices),
-
-    normals:
-      new Float32Array(normals),
-
-    ivValues:
-      new Float32Array(ivValues),
-
-    indices:
-      new Uint16Array(indices),
-
-    minIV:
-      minIV,
-
-    maxIV:
-      maxIV
-
+    vertices: new Float32Array(vertices),
+    normals: new Float32Array(normals),
+    ivValues: new Float32Array(ivValues),
+    indices: new Uint16Array(indices),
+    wireframeIndices: new Uint16Array(wireframeIndices),
+    minIV: minIV,
+    maxIV: maxIV
   };
 }
 
+function calculateVertexNormals(vertices, indices) {
+  const normals = new Array(vertices.length).fill(0.0);
 
-function calculateVertexNormals(
-  vertices,
-  indices
-) {
+  for (let index = 0; index < indices.length; index += 3) {
+    const vertexIndex0 = indices[index];
+    const vertexIndex1 = indices[index + 1];
+    const vertexIndex2 = indices[index + 2];
 
-  const normals =
-    new Array(vertices.length).fill(0.0);
+    const offset0 = vertexIndex0 * 3;
+    const offset1 = vertexIndex1 * 3;
+    const offset2 = vertexIndex2 * 3;
 
+    const p0 = [vertices[offset0], vertices[offset0 + 1], vertices[offset0 + 2]];
+    const p1 = [vertices[offset1], vertices[offset1 + 1], vertices[offset1 + 2]];
+    const p2 = [vertices[offset2], vertices[offset2 + 1], vertices[offset2 + 2]];
 
-  for (
-    let index = 0;
-    index < indices.length;
-    index += 3
-  ) {
-
-    const vertexIndex0 =
-      indices[index];
-
-    const vertexIndex1 =
-      indices[index + 1];
-
-    const vertexIndex2 =
-      indices[index + 2];
-
-
-    const offset0 =
-      vertexIndex0 * 3;
-
-    const offset1 =
-      vertexIndex1 * 3;
-
-    const offset2 =
-      vertexIndex2 * 3;
-
-
-    const p0 = [
-      vertices[offset0],
-      vertices[offset0 + 1],
-      vertices[offset0 + 2]
-    ];
-
-
-    const p1 = [
-      vertices[offset1],
-      vertices[offset1 + 1],
-      vertices[offset1 + 2]
-    ];
-
-
-    const p2 = [
-      vertices[offset2],
-      vertices[offset2 + 1],
-      vertices[offset2 + 2]
-    ];
-
-
-    const edge1 = [
-      p1[0] - p0[0],
-      p1[1] - p0[1],
-      p1[2] - p0[2]
-    ];
-
-
-    const edge2 = [
-      p2[0] - p0[0],
-      p2[1] - p0[1],
-      p2[2] - p0[2]
-    ];
-
+    const edge1 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
+    const edge2 = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
 
     const faceNormal = [
-
-      edge1[1] * edge2[2] -
-      edge1[2] * edge2[1],
-
-      edge1[2] * edge2[0] -
-      edge1[0] * edge2[2],
-
-      edge1[0] * edge2[1] -
-      edge1[1] * edge2[0]
-
+      edge1[1] * edge2[2] - edge1[2] * edge2[1],
+      edge1[2] * edge2[0] - edge1[0] * edge2[2],
+      edge1[0] * edge2[1] - edge1[1] * edge2[0]
     ];
 
-
-    addNormal(
-      normals,
-      vertexIndex0,
-      faceNormal
-    );
-
-
-    addNormal(
-      normals,
-      vertexIndex1,
-      faceNormal
-    );
-
-
-    addNormal(
-      normals,
-      vertexIndex2,
-      faceNormal
-    );
+    addNormal(normals, vertexIndex0, faceNormal);
+    addNormal(normals, vertexIndex1, faceNormal);
+    addNormal(normals, vertexIndex2, faceNormal);
   }
 
+  for (let vertexIndex = 0; vertexIndex < vertices.length / 3; vertexIndex++) {
+    const offset = vertexIndex * 3;
+    const x = normals[offset];
+    const y = normals[offset + 1];
+    const z = normals[offset + 2];
 
-  for (
-    let vertexIndex = 0;
-    vertexIndex < vertices.length / 3;
-    vertexIndex++
-  ) {
-
-    const offset =
-      vertexIndex * 3;
-
-
-    const x =
-      normals[offset];
-
-    const y =
-      normals[offset + 1];
-
-    const z =
-      normals[offset + 2];
-
-
-    const length =
-      Math.sqrt(
-        x * x +
-        y * y +
-        z * z
-      );
-
+    const length = Math.sqrt(x * x + y * y + z * z);
 
     if (length > 0.0) {
-
-      normals[offset] =
-        x / length;
-
-      normals[offset + 1] =
-        y / length;
-
-      normals[offset + 2] =
-        z / length;
+      normals[offset] = x / length;
+      normals[offset + 1] = y / length;
+      normals[offset + 2] = z / length;
     }
   }
-
 
   return normals;
 }
 
+function addNormal(normals, vertexIndex, faceNormal) {
+  const offset = vertexIndex * 3;
 
-function addNormal(
-  normals,
-  vertexIndex,
-  faceNormal
-) {
+  normals[offset] += faceNormal[0];
+  normals[offset + 1] += faceNormal[1];
+  normals[offset + 2] += faceNormal[2];
+}
 
-  const offset =
-    vertexIndex * 3;
+function buildWireframeIndices(triangleIndices) {
+  const edges = new Set();
+  const wireframeIndices = [];
 
+  function addEdge(vertexA, vertexB) {
+    const first = Math.min(vertexA, vertexB);
+    const second = Math.max(vertexA, vertexB);
+    const key = `${first}-${second}`;
 
-  normals[offset] +=
-    faceNormal[0];
+    if (!edges.has(key)) {
+      edges.add(key);
+      wireframeIndices.push(first, second);
+    }
+  }
 
-  normals[offset + 1] +=
-    faceNormal[1];
+  for (let index = 0; index < triangleIndices.length; index += 3) {
+    const vertex0 = triangleIndices[index];
+    const vertex1 = triangleIndices[index + 1];
+    const vertex2 = triangleIndices[index + 2];
 
-  normals[offset + 2] +=
-    faceNormal[2];
+    addEdge(vertex0, vertex1);
+    addEdge(vertex1, vertex2);
+    addEdge(vertex2, vertex0);
+  }
+
+  return wireframeIndices;
 }

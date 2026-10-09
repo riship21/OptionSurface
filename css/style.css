@@ -5,28 +5,23 @@ body {
   color: white;
 }
 
-
 header {
   padding: 20px 30px;
   border-bottom: 1px solid #334155;
 }
 
-
 header h1 {
   margin: 0;
 }
-
 
 header p {
   margin-bottom: 0;
   color: #b8c2cc;
 }
 
-
 main {
   padding: 30px;
 }
-
 
 canvas {
   display: block;
@@ -35,7 +30,6 @@ canvas {
   background-color: #111827;
   border: 1px solid #334155;
 }
-
 
 .chart-info {
   display: flex;
@@ -47,33 +41,27 @@ canvas {
   border: 1px solid #334155;
 }
 
-
 .axis-info {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-
 .x-axis {
   color: #f87171;
 }
-
 
 .y-axis {
   color: #4ade80;
 }
 
-
 .z-axis {
   color: #60a5fa;
 }
 
-
 .iv-legend {
   min-width: 280px;
 }
-
 
 .gradient-bar {
   height: 18px;
@@ -91,7 +79,6 @@ canvas {
   border: 1px solid #64748b;
 }
 
-
 .legend-labels {
   display: flex;
   justify-content: space-between;
@@ -99,6 +86,21 @@ canvas {
   color: #b8c2cc;
 }
 
+.display-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.display-options label {
+  color: #d1d5db;
+  cursor: pointer;
+}
+
+.display-options input {
+  margin-right: 6px;
+}
 
 #status {
   color: #9ca3af;
