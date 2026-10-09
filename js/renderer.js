@@ -2,6 +2,7 @@ import { ShaderProgram } from './shader-program.js';
 import { buildSurfaceMesh } from './surface-mesh.js';
 import { loadVolatilityData } from './volatility-data.js';
 import { OrbitCamera } from './camera.js';
+import { buildAxisGrid } from './axis-grid.js';
 
 
 export class Renderer {
@@ -22,11 +23,19 @@ export class Renderer {
     }
 
 
-    this.shader = null;
+    this.surfaceShader = null;
 
-    this.vertexArray = null;
+    this.lineShader = null;
 
-    this.indexCount = 0;
+
+    this.surfaceVertexArray = null;
+
+    this.gridVertexArray = null;
+
+
+    this.surfaceIndexCount = 0;
+
+    this.gridVertexCount = 0;
 
 
     this.projectionMatrix =
@@ -48,23 +57,43 @@ export class Renderer {
 
   async initialize() {
 
-    const vertexSource =
+    const surfaceVertexSource =
       await this.loadText(
         'shaders/surface.vert'
       );
 
 
-    const fragmentSource =
+    const surfaceFragmentSource =
       await this.loadText(
         'shaders/surface.frag'
       );
 
 
-    this.shader =
+    const lineVertexSource =
+      await this.loadText(
+        'shaders/line.vert'
+      );
+
+
+    const lineFragmentSource =
+      await this.loadText(
+        'shaders/line.frag'
+      );
+
+
+    this.surfaceShader =
       new ShaderProgram(
         this.gl,
-        vertexSource,
-        fragmentSource
+        surfaceVertexSource,
+        surfaceFragmentSource
+      );
+
+
+    this.lineShader =
+      new ShaderProgram(
+        this.gl,
+        lineVertexSource,
+        lineFragmentSource
       );
 
 
@@ -74,14 +103,23 @@ export class Renderer {
       );
 
 
-    const mesh =
+    const surfaceMesh =
       buildSurfaceMesh(
         volatilityData
       );
 
 
     this.createSurface(
-      mesh
+      surfaceMesh
+    );
+
+
+    const axisGrid =
+      buildAxisGrid();
+
+
+    this.createAxisGrid(
+      axisGrid
     );
 
 
@@ -114,12 +152,12 @@ export class Renderer {
       this.gl;
 
 
-    this.vertexArray =
+    this.surfaceVertexArray =
       gl.createVertexArray();
 
 
     gl.bindVertexArray(
-      this.vertexArray
+      this.surfaceVertexArray
     );
 
 
@@ -141,9 +179,10 @@ export class Renderer {
 
 
     const positionLocation =
-      this.shader.getAttributeLocation(
-        'aPosition'
-      );
+      this.surfaceShader
+        .getAttributeLocation(
+          'aPosition'
+        );
 
 
     gl.enableVertexAttribArray(
@@ -179,9 +218,10 @@ export class Renderer {
 
 
     const normalLocation =
-      this.shader.getAttributeLocation(
-        'aNormal'
-      );
+      this.surfaceShader
+        .getAttributeLocation(
+          'aNormal'
+        );
 
 
     gl.enableVertexAttribArray(
@@ -197,6 +237,7 @@ export class Renderer {
       0,
       0
     );
+
 
     const ivBuffer =
       gl.createBuffer();
@@ -216,9 +257,10 @@ export class Renderer {
 
 
     const ivLocation =
-      this.shader.getAttributeLocation(
-        'aIV'
-      );
+      this.surfaceShader
+        .getAttributeLocation(
+          'aIV'
+        );
 
 
     gl.enableVertexAttribArray(
@@ -253,8 +295,111 @@ export class Renderer {
     );
 
 
-    this.indexCount =
+    this.surfaceIndexCount =
       mesh.indices.length;
+
+
+    gl.bindVertexArray(
+      null
+    );
+  }
+
+
+  createAxisGrid(grid) {
+
+    const gl =
+      this.gl;
+
+
+    this.gridVertexArray =
+      gl.createVertexArray();
+
+
+    gl.bindVertexArray(
+      this.gridVertexArray
+    );
+
+
+    const positionBuffer =
+      gl.createBuffer();
+
+
+    gl.bindBuffer(
+      gl.ARRAY_BUFFER,
+      positionBuffer
+    );
+
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      grid.vertices,
+      gl.STATIC_DRAW
+    );
+
+
+    const positionLocation =
+      this.lineShader
+        .getAttributeLocation(
+          'aPosition'
+        );
+
+
+    gl.enableVertexAttribArray(
+      positionLocation
+    );
+
+
+    gl.vertexAttribPointer(
+      positionLocation,
+      3,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+
+    const colorBuffer =
+      gl.createBuffer();
+
+
+    gl.bindBuffer(
+      gl.ARRAY_BUFFER,
+      colorBuffer
+    );
+
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      grid.colors,
+      gl.STATIC_DRAW
+    );
+
+
+    const colorLocation =
+      this.lineShader
+        .getAttributeLocation(
+          'aColor'
+        );
+
+
+    gl.enableVertexAttribArray(
+      colorLocation
+    );
+
+
+    gl.vertexAttribPointer(
+      colorLocation,
+      3,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+
+    this.gridVertexCount =
+      grid.vertexCount;
 
 
     gl.bindVertexArray(
@@ -321,14 +466,27 @@ export class Renderer {
     );
 
 
-    this.shader.use();
+    this.drawSurface();
+
+    this.drawAxisGrid();
+  }
+
+
+  drawSurface() {
+
+    const gl =
+      this.gl;
+
+
+    this.surfaceShader.use();
 
 
     gl.uniformMatrix4fv(
 
-      this.shader.getUniformLocation(
-        'uProjectionMatrix'
-      ),
+      this.surfaceShader
+        .getUniformLocation(
+          'uProjectionMatrix'
+        ),
 
       false,
 
@@ -338,9 +496,10 @@ export class Renderer {
 
     gl.uniformMatrix4fv(
 
-      this.shader.getUniformLocation(
-        'uModelViewMatrix'
-      ),
+      this.surfaceShader
+        .getUniformLocation(
+          'uModelViewMatrix'
+        ),
 
       false,
 
@@ -350,9 +509,10 @@ export class Renderer {
 
     gl.uniformMatrix3fv(
 
-      this.shader.getUniformLocation(
-        'uNormalMatrix'
-      ),
+      this.surfaceShader
+        .getUniformLocation(
+          'uNormalMatrix'
+        ),
 
       false,
 
@@ -362,9 +522,10 @@ export class Renderer {
 
     gl.uniform3fv(
 
-      this.shader.getUniformLocation(
-        'uLightPosition'
-      ),
+      this.surfaceShader
+        .getUniformLocation(
+          'uLightPosition'
+        ),
 
       [
         0.0,
@@ -375,15 +536,68 @@ export class Renderer {
 
 
     gl.bindVertexArray(
-      this.vertexArray
+      this.surfaceVertexArray
     );
 
 
     gl.drawElements(
       gl.TRIANGLES,
-      this.indexCount,
+      this.surfaceIndexCount,
       gl.UNSIGNED_SHORT,
       0
+    );
+
+
+    gl.bindVertexArray(
+      null
+    );
+  }
+
+
+  drawAxisGrid() {
+
+    const gl =
+      this.gl;
+
+
+    this.lineShader.use();
+
+
+    gl.uniformMatrix4fv(
+
+      this.lineShader
+        .getUniformLocation(
+          'uProjectionMatrix'
+        ),
+
+      false,
+
+      this.projectionMatrix
+    );
+
+
+    gl.uniformMatrix4fv(
+
+      this.lineShader
+        .getUniformLocation(
+          'uModelViewMatrix'
+        ),
+
+      false,
+
+      this.modelViewMatrix
+    );
+
+
+    gl.bindVertexArray(
+      this.gridVertexArray
+    );
+
+
+    gl.drawArrays(
+      gl.LINES,
+      0,
+      this.gridVertexCount
     );
 
 

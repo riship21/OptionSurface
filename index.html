@@ -25,13 +25,62 @@
   </header>
 
   <main>
-    <canvas id="glCanvas" width="960" height="540"></canvas>
 
-    <p id="status">Initializing WebGL2...</p>
+    <canvas
+      id="glCanvas"
+      width="960"
+      height="540"
+    ></canvas>
+
+    <div class="chart-info">
+
+      <div class="axis-info">
+
+        <strong>Axes</strong>
+
+        <span class="x-axis">
+          X — Strike Price ($80–$120)
+        </span>
+
+        <span class="y-axis">
+          Y — Implied Volatility (22%–39%)
+        </span>
+
+        <span class="z-axis">
+          Z — Time to Expiration (30–180 days)
+        </span>
+
+      </div>
+
+
+      <div class="iv-legend">
+
+        <strong>Implied Volatility</strong>
+
+        <div class="gradient-bar"></div>
+
+        <div class="legend-labels">
+          <span>Low IV</span>
+          <span>High IV</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <p id="status">
+      Initializing WebGL2...
+    </p>
+
   </main>
 
+
   <script src="vendor/gl-matrix-min.js"></script>
-  <script type="module" src="js/main.js"></script>
+
+  <script
+    type="module"
+    src="js/main.js"
+  ></script>
 
 </body>
 

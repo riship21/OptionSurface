@@ -5,23 +5,28 @@ body {
   color: white;
 }
 
+
 header {
   padding: 20px 30px;
   border-bottom: 1px solid #334155;
 }
 
+
 header h1 {
   margin: 0;
 }
+
 
 header p {
   margin-bottom: 0;
   color: #b8c2cc;
 }
 
+
 main {
   padding: 30px;
 }
+
 
 canvas {
   display: block;
@@ -31,6 +36,71 @@ canvas {
   border: 1px solid #334155;
 }
 
+
+.chart-info {
+  display: flex;
+  gap: 50px;
+  margin-top: 20px;
+  padding: 16px;
+  max-width: 930px;
+  background-color: #111827;
+  border: 1px solid #334155;
+}
+
+
+.axis-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+.x-axis {
+  color: #f87171;
+}
+
+
+.y-axis {
+  color: #4ade80;
+}
+
+
+.z-axis {
+  color: #60a5fa;
+}
+
+
+.iv-legend {
+  min-width: 280px;
+}
+
+
+.gradient-bar {
+  height: 18px;
+  margin-top: 10px;
+
+  background: linear-gradient(
+    to right,
+    #0d33e6,
+    #00ccff,
+    #19d940,
+    #ffd90d,
+    #f20d0d
+  );
+
+  border: 1px solid #64748b;
+}
+
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: #b8c2cc;
+}
+
+
 #status {
   color: #9ca3af;
+  margin-top: 14px;
 }
