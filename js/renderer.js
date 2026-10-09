@@ -198,6 +198,43 @@ export class Renderer {
       0
     );
 
+    const ivBuffer =
+      gl.createBuffer();
+
+
+    gl.bindBuffer(
+      gl.ARRAY_BUFFER,
+      ivBuffer
+    );
+
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      mesh.ivValues,
+      gl.STATIC_DRAW
+    );
+
+
+    const ivLocation =
+      this.shader.getAttributeLocation(
+        'aIV'
+      );
+
+
+    gl.enableVertexAttribArray(
+      ivLocation
+    );
+
+
+    gl.vertexAttribPointer(
+      ivLocation,
+      1,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
 
     const indexBuffer =
       gl.createBuffer();

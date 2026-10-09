@@ -5,6 +5,7 @@ export function buildSurfaceMesh(data) {
   const volatility = data.volatility;
 
   const vertices = [];
+  const ivValues = [];
   const indices = [];
 
   const minStrike = Math.min(...strikes);
@@ -41,6 +42,11 @@ export function buildSurfaceMesh(data) {
         volatility[strikeIndex][expirationIndex];
 
 
+      const normalizedIV =
+        (iv - minIV) /
+        (maxIV - minIV);
+
+
       const x =
         (
           (strike - minStrike) /
@@ -58,16 +64,19 @@ export function buildSurfaceMesh(data) {
 
 
       const y =
-        (
-          (iv - minIV) /
-          (maxIV - minIV)
-        ) * 1.5;
+        normalizedIV *
+        1.5;
 
 
       vertices.push(
         x,
         y,
         z
+      );
+
+
+      ivValues.push(
+        normalizedIV
       );
     }
   }
@@ -133,8 +142,17 @@ export function buildSurfaceMesh(data) {
     normals:
       new Float32Array(normals),
 
+    ivValues:
+      new Float32Array(ivValues),
+
     indices:
-      new Uint16Array(indices)
+      new Uint16Array(indices),
+
+    minIV:
+      minIV,
+
+    maxIV:
+      maxIV
 
   };
 }
