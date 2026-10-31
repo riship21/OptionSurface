@@ -15,7 +15,7 @@ export class OrbitCamera {
     this.target = glMatrix.vec3.fromValues(0, 0.65, 0);
 
     // Move the camera closer to enlarge the graph
-    this.distance = 4.8;
+    this.distance = 4.35;
 
     // Default viewing direction
     this.yaw = 0;

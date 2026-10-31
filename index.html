@@ -2,67 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Interactive 3D Options Volatility Surface Explorer">
   <meta name="author" content="Rishi Patel">
-  <title>OptionSurface</title>
+  <title>OptionSurface — Volatility Explorer</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/phase2.css">
   <link rel="stylesheet" href="css/phase3.css">
+  <link rel="stylesheet" href="css/phase5.css">
+  <link rel="stylesheet" href="css/axis-labels.css">
 </head>
 <body>
-  <header><h1>OptionSurface</h1><p>Interactive 3D Options Volatility Surface Explorer</p></header>
-  <main>
-    <div class="surface-viewport">
-      <canvas id="glCanvas" width="960" height="540" aria-label="3D volatility surface; click surface to inspect a point"></canvas>
-      <div id="selectionMarker" class="selection-marker" hidden aria-hidden="true"></div>
+  <header class="app-header">
+    <div class="brand-mark" aria-hidden="true">OS</div>
+    <div class="brand-copy">
+      <h1>OptionSurface</h1>
+      <p>Interactive 3D Options Volatility Surface Explorer</p>
     </div>
-    <div class="graphics-controls">
-      <button id="cameraReset" type="button">Reset camera</button>
-      <label for="lightingMode">Shading</label>
-      <select id="lightingMode"><option value="blinn">Blinn–Phong</option><option value="normal">Surface normals</option></select>
-      <label for="lightIntensity">Light intensity</label>
-      <input id="lightIntensity" type="range" min="0" max="2" step="0.1" value="1">
-      <output id="intensityValue" for="lightIntensity">1.0</output>
-      <span class="camera-help">Left-drag orbit · Right/Shift-drag pan · Scroll zoom</span>
-    </div>
-    <div class="chart-info">
-      <div class="axis-info">
-        <strong>Axes</strong>
-        <span class="x-axis">X — Strike Price ($80–$120)</span>
-        <span class="y-axis">Y — Implied Volatility (variable by dataset)</span>
-        <span class="z-axis">Z — Time to Expiration (30–180 days)</span>
+    <span class="header-meta">COSC 552 · Computer Graphics</span>
+  </header>
+
+  <main class="dashboard">
+    <section class="stage-column" aria-label="3D surface visualization">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">VOLATILITY VISUALIZATION</p>
+          <h2>3D Surface Explorer</h2>
+          <p class="panel-subtitle">Rotate, zoom, and click to inspect synthetic implied-volatility data.</p>
+        </div>
+        <span class="source-pill">SYNTHETIC DATA</span>
       </div>
-      <div class="iv-legend">
-        <strong>Implied Volatility</strong>
-        <div class="gradient-bar"></div>
-        <div class="legend-labels"><span>Low IV</span><span>High IV</span></div>
+      <div class="surface-viewport">
+        <canvas id="glCanvas" width="960" height="540"
+                aria-label="Interactive 3D volatility surface. Click to inspect a point."></canvas>
+        <div id="selectionMarker" class="selection-marker" hidden aria-hidden="true"></div>
+        <span class="viewport-label">WebGL2 · Live 3D</span>
       </div>
-      <div class="display-options">
-        <strong>Display</strong>
-        <label><input type="checkbox" id="surfaceToggle" checked> Shaded Surface</label>
-        <label><input type="checkbox" id="wireframeToggle"> Wireframe</label>
+      <div class="camera-toolbar">
+        <button id="cameraReset" type="button">Reset camera</button>
+        <div class="camera-help">Left drag · Orbit <span> / </span> Right or Shift drag · Pan <span> / </span> Scroll · Zoom</div>
       </div>
-      <div class="dataset-info">
-        <strong>Dataset</strong>
-        <label for="datasetSelect">Synthetic scenario</label>
-        <select id="datasetSelect" aria-label="Volatility dataset" style="max-width:100%;margin:.35rem 0 .7rem;padding:.35rem;color:#fff;background:#162234;border:1px solid #617085"></select>
+      <section class="inspection-panel" aria-live="polite">
+        <div class="inspection-copy">
+          <strong>Point inspection</strong>
+          <span id="inspectionText">Click the colored surface to inspect strike, expiration and implied volatility. Drag to rotate.</span>
+        </div>
+        <button id="clearInspection" type="button" disabled>Clear selection</button>
+      </section>
+      <p id="status" role="status">Initializing WebGL2...</p>
+    </section>
+
+    <aside class="side-column" aria-label="Visualization settings and data">
+      <section class="side-panel">
+        <div class="section-title"><span class="section-index">01</span><h2>Scenario</h2></div>
+        <label class="field-label" for="datasetSelect">Volatility dataset</label>
+        <select id="datasetSelect" aria-label="Volatility dataset"></select>
+        <p class="help-text">Four reproducible examples. Not live market quotes.</p>
+      </section>
+
+      <section class="side-panel">
+        <div class="section-title"><span class="section-index">02</span><h2>Render settings</h2></div>
+        <div class="field-stack">
+          <label class="field-label" for="lightingMode">Shading model</label>
+          <select id="lightingMode">
+            <option value="blinn">Blinn–Phong</option>
+            <option value="normal">Surface normals</option>
+          </select>
+        </div>
+        <div class="slider-head"><label class="field-label" for="lightIntensity">Light intensity</label><output id="intensityValue" for="lightIntensity">1.0</output></div>
+        <input id="lightIntensity" type="range" min="0" max="2" step="0.1" value="1">
+        <div class="display-options">
+          <label><input type="checkbox" id="surfaceToggle" checked> Shaded surface</label>
+          <label><input type="checkbox" id="wireframeToggle"> Wireframe overlay</label>
+        </div>
+      </section>
+
+      <section class="side-panel">
+        <div class="section-title"><span class="section-index">03</span><h2>Data legend</h2></div>
+        <div class="axis-info">
+          <div><span class="axis-swatch swatch-x"></span><span class="x-axis">X · Strike price</span></div>
+          <div><span class="axis-swatch swatch-y"></span><span class="y-axis">Y · Implied volatility</span></div>
+          <div><span class="axis-swatch swatch-z"></span><span class="z-axis">Z · Time to expiration</span></div>
+        </div>
+        <div class="iv-legend">
+          <strong>Implied volatility</strong>
+          <div class="gradient-bar"></div>
+          <div class="legend-labels"><span>Lower IV</span><span>Higher IV</span></div>
+        </div>
+      </section>
+
+      <section class="side-panel dataset-info">
+        <div class="section-title"><span class="section-index">04</span><h2>Dataset details</h2></div>
         <span id="datasetName">Loading...</span>
         <span id="strikeRange"></span>
         <span id="expirationRange"></span>
         <span id="ivRange"></span>
+        <div class="data-divider"></div>
         <span id="gridResolution"></span>
         <span id="renderResolution"></span>
         <span id="vertexCount"></span>
         <span id="triangleCount"></span>
-      </div>
-    </div>
-    <section class="inspection-panel" aria-live="polite">
-      <strong>Point inspection</strong>
-      <span id="inspectionText">Click the colored surface to inspect strike, expiration and implied volatility. Drag to rotate.</span>
-      <button id="clearInspection" type="button" disabled>Clear selection</button>
-    </section>
-    <p id="status" role="status">Initializing WebGL2...</p>
+      </section>
+    </aside>
   </main>
+
   <script src="vendor/gl-matrix-min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>

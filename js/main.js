@@ -1,5 +1,6 @@
 import { Renderer } from './renderer.js';
 import { DATASETS } from './dataset-catalog.js';
+import { AxisLabels } from './axis-labels.js';
 
 async function main() {
   const canvas = document.getElementById('glCanvas');
@@ -18,6 +19,7 @@ async function main() {
   try {
     renderer = new Renderer(canvas);
     await renderer.initialize();
+    const axisLabels = new AxisLabels(document.querySelector('.surface-viewport'), renderer);
     const selector = document.getElementById('datasetSelect');
     for (const entry of DATASETS) {
       const option = document.createElement('option');
@@ -38,6 +40,7 @@ async function main() {
       document.getElementById('ivRange').textContent = `IV Range: ${(100*d.minIV).toFixed(1)}% – ${(100*d.maxIV).toFixed(1)}%`;
     };
     updateInfo();
+    axisLabels.setDataset(renderer.getDatasetInfo());
     const inspectionText = document.getElementById('inspectionText');
     const marker = document.getElementById('selectionMarker');
     const clearInspection = document.getElementById('clearInspection');
@@ -70,6 +73,7 @@ async function main() {
       try {
         await renderer.setDataset(requested);
         updateInfo();
+        axisLabels.setDataset(renderer.getDatasetInfo());
         clearSelection();
         status.textContent = 'Left-drag: orbit · Right/Shift-drag: pan · Scroll: zoom.';
       } catch (error) {
@@ -94,6 +98,7 @@ async function main() {
       if (!running) return;
       try {
         renderer.render();
+        axisLabels.update();
         const p=renderer.selectedScreenPosition();
         marker.hidden=!p;
         if(p) { marker.style.left=`${p.x}px`; marker.style.top=`${p.y}px`; }

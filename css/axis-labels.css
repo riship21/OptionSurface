@@ -1,0 +1,23 @@
+/* World-anchored tick labels for the X/strike, Y/IV, and Z/expiration axes. */
+.axis-label-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+.axis-tick {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font: 600 11px/1.2 Inter, Segoe UI, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px #06101d, 0 0 6px #06101d;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(10, 19, 32, 0.73);
+}
+.axis-tick[hidden] { display: none; }
+.axis-tick-x { color: #ff9292; }
+.axis-tick-y { color: #78eba0; }
+.axis-tick-z { color: #8fbafa; }
