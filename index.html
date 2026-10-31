@@ -1,142 +1,50 @@
 <!doctype html>
-
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-
-  <title>OptionSurface</title>
-
-  <meta
-    name="description"
-    content="Interactive 3D Options Volatility Surface Explorer"
-  >
-
+  <meta name="description" content="Interactive 3D Options Volatility Surface Explorer">
   <meta name="author" content="Rishi Patel">
-
+  <title>OptionSurface</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
-
-  <header>
-    <h1>OptionSurface</h1>
-    <p>Interactive 3D Options Volatility Surface Explorer</p>
-  </header>
-
+  <header><h1>OptionSurface</h1><p>Interactive 3D Options Volatility Surface Explorer</p></header>
   <main>
-
-    <canvas
-      id="glCanvas"
-      width="960"
-      height="540"
-    ></canvas>
-
+    <canvas id="glCanvas" width="960" height="540"></canvas>
     <div class="chart-info">
-
       <div class="axis-info">
-
         <strong>Axes</strong>
-
-        <span class="x-axis">
-          X — Strike Price ($80–$120)
-        </span>
-
-        <span class="y-axis">
-          Y — Implied Volatility (22%–39%)
-        </span>
-
-        <span class="z-axis">
-          Z — Time to Expiration (30–180 days)
-        </span>
-
+        <span class="x-axis">X — Strike Price ($80–$120)</span>
+        <span class="y-axis">Y — Implied Volatility (variable by dataset)</span>
+        <span class="z-axis">Z — Time to Expiration (30–180 days)</span>
       </div>
-
-
       <div class="iv-legend">
-
         <strong>Implied Volatility</strong>
-
         <div class="gradient-bar"></div>
-
-        <div class="legend-labels">
-          <span>Low IV</span>
-          <span>High IV</span>
-        </div>
-
+        <div class="legend-labels"><span>Low IV</span><span>High IV</span></div>
       </div>
-
-
       <div class="display-options">
-
         <strong>Display</strong>
-
-        <label>
-          <input
-            type="checkbox"
-            id="surfaceToggle"
-            checked
-          >
-          Shaded Surface
-        </label>
-
-        <label>
-          <input
-            type="checkbox"
-            id="wireframeToggle"
-          >
-          Wireframe
-        </label>
-
+        <label><input type="checkbox" id="surfaceToggle" checked> Shaded Surface</label>
+        <label><input type="checkbox" id="wireframeToggle"> Wireframe</label>
       </div>
-
-
       <div class="dataset-info">
-
-        <strong>Current Dataset</strong>
-
-        <span id="datasetName">
-          Loading...
-        </span>
-
-        <span id="strikeRange">
-          Strike Range:
-        </span>
-
-        <span id="expirationRange">
-          Expiration Range:
-        </span>
-
-        <span id="gridResolution">
-          Grid Resolution:
-        </span>
-
-        <span id="vertexCount">
-          Vertices:
-        </span>
-
-        <span id="triangleCount">
-          Triangles:
-        </span>
-
+        <strong>Dataset</strong>
+        <label for="datasetSelect">Synthetic scenario</label>
+        <select id="datasetSelect" aria-label="Volatility dataset" style="max-width:100%;margin:.35rem 0 .7rem;padding:.35rem;color:#fff;background:#162234;border:1px solid #617085"></select>
+        <span id="datasetName">Loading...</span>
+        <span id="strikeRange"></span>
+        <span id="expirationRange"></span>
+        <span id="ivRange"></span>
+        <span id="gridResolution"></span>
+        <span id="renderResolution"></span>
+        <span id="vertexCount"></span>
+        <span id="triangleCount"></span>
       </div>
-
     </div>
-
-    <p id="status">
-      Initializing WebGL2...
-    </p>
-
+    <p id="status" role="status">Initializing WebGL2...</p>
   </main>
-
-
   <script src="vendor/gl-matrix-min.js"></script>
-
-  <script
-    type="module"
-    src="js/main.js"
-  ></script>
-
+  <script type="module" src="js/main.js"></script>
 </body>
-
 </html>

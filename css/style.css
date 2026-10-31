@@ -138,3 +138,30 @@ canvas {
   color: #9ca3af;
   margin-top: 14px;
 }
+
+/* Dataset dropdown styling */
+#datasetSelect {
+    display: block;
+    width: 240px;
+    min-height: 38px;
+    padding: 8px 12px;
+    margin-top: 10px;
+
+    background-color: #1e293b;
+    color: #ffffff;
+
+    border: 1px solid #64748b;
+    border-radius: 6px;
+
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+
+    color-scheme: dark;
+}
+
+#datasetSelect option {
+    background-color: #1e293b;
+    color: #ffffff;
+    padding: 8px;
+}
