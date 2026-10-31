@@ -5,6 +5,7 @@ import { OrbitCamera } from './camera.js';
 import { buildAxisGrid } from './axis-grid.js';
 import { GPUResources } from './gpu-resources.js';
 import { findDataset } from './dataset-catalog.js';
+import { pickMesh, rayFromNDC, surfacePointValues } from './picking.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -17,6 +18,8 @@ export class Renderer {
     this.normalMatrix = glMatrix.mat3.create();
     this.showSurface = true;
     this.showWireframe = false;
+    this.lightingMode = 0;
+    this.lightIntensity = 1.0;
     this.surfaceResources = null;
     this.gridResources = null;
     this.surfaceVertexArray = null;
@@ -28,6 +31,8 @@ export class Renderer {
     this.datasetInfo = null;
     this.activeDatasetId = null;
     this.datasetRequest = 0;
+    this.currentMesh = null;
+    this.selectedPoint = null;
   }
 
   async initialize() {
@@ -61,6 +66,8 @@ export class Renderer {
     // Atomically install new mesh, releasing buffers/VAOs from previous dataset.
     const previous = this.surfaceResources;
     this.surfaceResources = upload;
+    this.currentMesh = mesh;
+    this.selectedPoint = null;
     this.surfaceVertexArray = surface;
     this.wireframeVertexArray = wireframe;
     this.surfaceIndexCount = mesh.indices.length;
@@ -157,7 +164,10 @@ export class Renderer {
     this.surfaceShader.use();
     this.setMatrixUniforms(this.surfaceShader);
     gl.uniformMatrix3fv(this.surfaceShader.getUniformLocation('uNormalMatrix'), false, this.normalMatrix);
-    gl.uniform3fv(this.surfaceShader.getUniformLocation('uLightPosition'), [0,2.5,4]);
+    // Shader positions are in eye/view space; keep light in the SAME space.
+    gl.uniform3fv(this.surfaceShader.getUniformLocation('uLightPosition'), [0,3,5]);
+    gl.uniform1i(this.surfaceShader.getUniformLocation('uLightingMode'), this.lightingMode);
+    gl.uniform1f(this.surfaceShader.getUniformLocation('uLightIntensity'), this.lightIntensity);
     gl.bindVertexArray(this.surfaceVertexArray);
     gl.drawElements(gl.TRIANGLES, this.surfaceIndexCount, gl.UNSIGNED_SHORT, 0);
     gl.bindVertexArray(null);
@@ -174,6 +184,52 @@ export class Renderer {
     gl.bindVertexArray(null);
   }
 
+  // Click coordinates are in browser CSS pixels. Convert them to NDC
+  // using the canvas bounding rectangle (independent of devicePixelRatio).
+  inspectAt(clientX,clientY) {
+    const rect=this.canvas.getBoundingClientRect();
+    if(!rect.width || !rect.height || !this.currentMesh) return null;
+    const ndcX=2*(clientX-rect.left)/rect.width-1;
+    const ndcY=1-2*(clientY-rect.top)/rect.height;
+    const aspect=rect.width/rect.height;
+    const projection=glMatrix.mat4.create();
+    glMatrix.mat4.perspective(projection, Math.PI/3, aspect, .1, 100);
+    const view=this.camera.getViewMatrix();
+    const vp=glMatrix.mat4.create();
+    glMatrix.mat4.multiply(vp,projection,view);
+    const inv=glMatrix.mat4.create();
+    if(!glMatrix.mat4.invert(inv,vp)) return null;
+    const ray=rayFromNDC(ndcX,ndcY,inv);
+    const hit=pickMesh(ray.origin,ray.direction,this.currentMesh);
+    this.selectedPoint=hit?.point ?? null;
+    return hit ? surfacePointValues(hit.point,this.datasetInfo):null;
+  }
+
+  clearInspection() { this.selectedPoint=null; }
+
+  // Project stored selection each frame so marker follows camera motion.
+  selectedScreenPosition() {
+    if(!this.selectedPoint) return null;
+    const rect=this.canvas.getBoundingClientRect();
+    const projection=glMatrix.mat4.create();
+    glMatrix.mat4.perspective(projection,Math.PI/3,rect.width/rect.height,.1,100);
+    const vp=glMatrix.mat4.create();
+    glMatrix.mat4.multiply(vp,projection,this.camera.getViewMatrix());
+    const p=this.selectedPoint,m=vp;
+    const clipX=m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12];
+    const clipY=m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13];
+    const clipW=m[3]*p[0]+m[7]*p[1]+m[11]*p[2]+m[15];
+    if(clipW<=0) return null;
+    const x=(clipX/clipW*.5+.5)*rect.width;
+    const y=(.5-clipY/clipW*.5)*rect.height;
+    return x>=0 && x<=rect.width && y>=0 && y<=rect.height ? {x,y}:null;
+  }
+
+  setLightingMode(value) { this.lightingMode = value === 'normal' ? 1 : 0; }
+  setLightIntensity(value) {
+    if (!Number.isFinite(value)) throw new Error('Lighting intensity must be finite');
+    this.lightIntensity = Math.max(0, Math.min(2, value));
+  }
   setSurfaceVisible(value) { this.showSurface = value; }
   setWireframeVisible(value) { this.showWireframe = value; }
   getDatasetInfo() { return this.datasetInfo; }
@@ -194,5 +250,7 @@ export class Renderer {
     this.gridResources?.dispose();
     this.surfaceResources = null;
     this.gridResources = null;
+    this.currentMesh = null;
+    this.selectedPoint = null;
   }
 }

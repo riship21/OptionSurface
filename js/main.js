@@ -28,6 +28,24 @@ async function main() {
       document.getElementById('ivRange').textContent = `IV Range: ${(100*d.minIV).toFixed(1)}% – ${(100*d.maxIV).toFixed(1)}%`;
     };
     updateInfo();
+    const inspectionText = document.getElementById('inspectionText');
+    const marker = document.getElementById('selectionMarker');
+    const clearInspection = document.getElementById('clearInspection');
+    const clearSelection = () => { renderer.clearInspection(); marker.hidden = true; inspectionText.textContent = 'Click the colored surface to inspect strike, expiration and implied volatility. Drag to rotate.'; clearInspection.disabled = true; };
+    clearInspection.addEventListener('click', clearSelection);
+    let press = null;
+    canvas.addEventListener('pointerdown', event => { if(event.button === 0 && !event.shiftKey) press={id:event.pointerId,x:event.clientX,y:event.clientY}; else press=null; });
+    canvas.addEventListener('pointercancel', () => { press=null; });
+    canvas.addEventListener('pointerup', event => {
+      if(!press || press.id !== event.pointerId) return;
+      const moved=Math.hypot(event.clientX-press.x,event.clientY-press.y);
+      press=null;
+      if(moved>5) return; // camera drag, not a click
+      const point=renderer.inspectAt(event.clientX,event.clientY);
+      if(!point) { clearSelection(); return; }
+      inspectionText.textContent = `Strike: $${point.strike.toFixed(2)} · Expiration: ${point.expiration.toFixed(1)} days · Implied volatility: ${(point.iv*100).toFixed(2)}% (interpolated)`;
+      clearInspection.disabled=false;
+    });
     const surfaceToggle = document.getElementById('surfaceToggle');
     const wireframeToggle = document.getElementById('wireframeToggle');
     surfaceToggle.addEventListener('change', () => renderer.setSurfaceVisible(surfaceToggle.checked));
@@ -42,16 +60,34 @@ async function main() {
       try {
         await renderer.setDataset(requested);
         updateInfo();
-        status.textContent = 'Drag to rotate. Scroll to zoom.';
+        clearSelection();
+        status.textContent = 'Left-drag: orbit · Right/Shift-drag: pan · Scroll: zoom.';
       } catch (error) {
         console.error(error);
         selector.value = renderer.activeDatasetId;
         status.textContent = `Dataset error: ${error.message}`;
       } finally { busy = false; selector.disabled = false; }
     });
-    status.textContent = 'Drag to rotate. Scroll to zoom.';
+    const resetButton = document.getElementById('cameraReset');
+    resetButton.addEventListener('click', () => renderer.camera.reset());
+    const lightingMode = document.getElementById('lightingMode');
+    lightingMode.addEventListener('change', () => renderer.setLightingMode(lightingMode.value));
+    const lightIntensity = document.getElementById('lightIntensity');
+    const intensityValue = document.getElementById('intensityValue');
+    lightIntensity.addEventListener('input', () => {
+      renderer.setLightIntensity(Number(lightIntensity.value));
+      intensityValue.textContent = Number(lightIntensity.value).toFixed(1);
+    });
+    status.textContent = 'Left-drag: orbit · Right/Shift-drag: pan · Scroll: zoom.';
     let running = true;
-    function frame() { if (!running) return; renderer.render(); requestAnimationFrame(frame); }
+    function frame() {
+      if (!running) return;
+      renderer.render();
+      const p=renderer.selectedScreenPosition();
+      marker.hidden=!p;
+      if(p) { marker.style.left=`${p.x}px`; marker.style.top=`${p.y}px`; }
+      requestAnimationFrame(frame);
+    }
     requestAnimationFrame(frame);
     window.addEventListener('pagehide', () => { running = false; renderer.dispose(); }, {once:true});
   } catch (error) {

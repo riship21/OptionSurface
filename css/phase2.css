@@ -1,0 +1,29 @@
+/* Append to existing css/style.css (or link this stylesheet after style.css). */
+main {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 24px;
+    box-sizing: border-box;
+}
+canvas {
+    display: block;
+    width: 100%;
+    max-width: none;
+
+    height: min(75vh, 760px);
+    min-height: 480px;
+
+    box-sizing: border-box;
+    background-color: #111827;
+    border: 1px solid #334155;
+
+    touch-action: none;
+}
+.chart-info { max-width: none; gap: 32px; box-sizing: border-box; }
+.graphics-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin: 12px 0 16px; color:#dbe6f1; }
+.graphics-controls button, .graphics-controls select { background:#1e293b; color:white; border:1px solid #64748b; border-radius:6px; padding:8px 12px; cursor:pointer; color-scheme:dark; }
+.graphics-controls input { accent-color:#38bdf8; }
+.camera-help { color:#9ca3af; font-size:13px; margin-left:auto; }
+#datasetSelect, #datasetSelect option { background:#1e293b; color:white; color-scheme:dark; min-height:36px; }
+@media(max-width:650px) { main{padding:12px;} canvas{min-height:320px;height:52vh;} .camera-help{width:100%;} }

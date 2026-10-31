@@ -6,11 +6,25 @@
   <meta name="author" content="Rishi Patel">
   <title>OptionSurface</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/phase2.css">
+  <link rel="stylesheet" href="css/phase3.css">
 </head>
 <body>
   <header><h1>OptionSurface</h1><p>Interactive 3D Options Volatility Surface Explorer</p></header>
   <main>
-    <canvas id="glCanvas" width="960" height="540"></canvas>
+    <div class="surface-viewport">
+      <canvas id="glCanvas" width="960" height="540" aria-label="3D volatility surface; click surface to inspect a point"></canvas>
+      <div id="selectionMarker" class="selection-marker" hidden aria-hidden="true"></div>
+    </div>
+    <div class="graphics-controls">
+      <button id="cameraReset" type="button">Reset camera</button>
+      <label for="lightingMode">Shading</label>
+      <select id="lightingMode"><option value="blinn">Blinn–Phong</option><option value="normal">Surface normals</option></select>
+      <label for="lightIntensity">Light intensity</label>
+      <input id="lightIntensity" type="range" min="0" max="2" step="0.1" value="1">
+      <output id="intensityValue" for="lightIntensity">1.0</output>
+      <span class="camera-help">Left-drag orbit · Right/Shift-drag pan · Scroll zoom</span>
+    </div>
     <div class="chart-info">
       <div class="axis-info">
         <strong>Axes</strong>
@@ -42,6 +56,11 @@
         <span id="triangleCount"></span>
       </div>
     </div>
+    <section class="inspection-panel" aria-live="polite">
+      <strong>Point inspection</strong>
+      <span id="inspectionText">Click the colored surface to inspect strike, expiration and implied volatility. Drag to rotate.</span>
+      <button id="clearInspection" type="button" disabled>Clear selection</button>
+    </section>
     <p id="status" role="status">Initializing WebGL2...</p>
   </main>
   <script src="vendor/gl-matrix-min.js"></script>

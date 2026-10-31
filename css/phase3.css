@@ -1,0 +1,17 @@
+/* Phase 3: preserve full-width layout regardless of browser zoom. */
+main { width:100%; max-width:none; margin:0; box-sizing:border-box; }
+.surface-viewport { position:relative; width:100%; }
+.surface-viewport canvas { display:block; width:100%; }
+.selection-marker {
+  position:absolute; width:14px; height:14px; box-sizing:border-box;
+  border:3px solid #fff; border-radius:50%; background:#0284c7;
+  box-shadow:0 0 0 3px #0f1720, 0 0 16px #38bdf8;
+  transform:translate(-50%,-50%); pointer-events:none;
+}
+.selection-marker[hidden] { display:none; }
+.inspection-panel { display:flex; flex-wrap:wrap; align-items:center; gap:14px; padding:14px 16px;
+  margin-top:12px; background:#111827; border:1px solid #334155; color:#e2e8f0; }
+#inspectionText { flex:1; min-width:230px; font-size:14px; }
+#clearInspection { color:#fff; background:#1e293b; border:1px solid #64748b;
+  border-radius:6px; padding:7px 12px; cursor:pointer; }
+#clearInspection:disabled { opacity:.45; cursor:default; }

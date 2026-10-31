@@ -1,152 +1,34 @@
 #version 300 es
-
 precision highp float;
-
 in vec3 fragmentPosition;
 in vec3 fragmentNormal;
 in float fragmentIV;
-
-uniform vec3 uLightPosition;
-
+uniform vec3 uLightPosition; // view-space light; fragmentPosition is view-space
+uniform int uLightingMode;   // 0: Blinn-Phong; 1: normal visualization
+uniform float uLightIntensity;
 out vec4 fragColor;
-
-
-vec3 volatilityColor(float value) {
-
-  value =
-    clamp(
-      value,
-      0.0,
-      1.0
-    );
-
-
-  if (value < 0.25) {
-
-    return mix(
-      vec3(0.05, 0.20, 0.90),
-      vec3(0.00, 0.80, 1.00),
-      value / 0.25
-    );
-  }
-
-
-  if (value < 0.50) {
-
-    return mix(
-      vec3(0.00, 0.80, 1.00),
-      vec3(0.10, 0.85, 0.25),
-      (value - 0.25) / 0.25
-    );
-  }
-
-
-  if (value < 0.75) {
-
-    return mix(
-      vec3(0.10, 0.85, 0.25),
-      vec3(1.00, 0.85, 0.05),
-      (value - 0.50) / 0.25
-    );
-  }
-
-
-  return mix(
-    vec3(1.00, 0.85, 0.05),
-    vec3(0.95, 0.05, 0.05),
-    (value - 0.75) / 0.25
-  );
+vec3 volatilityColor(float v) {
+  v = clamp(v, 0.0, 1.0);
+  if (v < .25) return mix(vec3(.05,.20,.90),vec3(.0,.80,1.0),v/.25);
+  if (v < .50) return mix(vec3(.0,.80,1.0),vec3(.10,.85,.25),(v-.25)/.25);
+  if (v < .75) return mix(vec3(.10,.85,.25),vec3(1.,.85,.05),(v-.50)/.25);
+  return mix(vec3(1.,.85,.05),vec3(.95,.05,.05),(v-.75)/.25);
 }
-
-
 void main() {
-
-  vec3 normal =
-    normalize(fragmentNormal);
-
-
-  vec3 lightDirection =
-    normalize(
-      uLightPosition -
-      fragmentPosition
-    );
-
-
-  vec3 viewDirection =
-    normalize(
-      -fragmentPosition
-    );
-
-
-  float diffuseAmount =
-    max(
-      dot(
-        normal,
-        lightDirection
-      ),
-      0.0
-    );
-
-
-  vec3 halfwayDirection =
-    normalize(
-      lightDirection +
-      viewDirection
-    );
-
-
-  float specularAmount =
-    0.0;
-
-
-  if (diffuseAmount > 0.0) {
-
-    specularAmount =
-      pow(
-        max(
-          dot(
-            normal,
-            halfwayDirection
-          ),
-          0.0
-        ),
-        48.0
-      );
+  vec3 n = normalize(fragmentNormal);
+  if (uLightingMode == 1) {
+    fragColor = vec4(n * .5 + .5, 1.0);
+    return;
   }
-
-
-  vec3 baseColor =
-    volatilityColor(
-      fragmentIV
-    );
-
-
-  vec3 ambient =
-    0.08 *
-    baseColor;
-
-
-  vec3 diffuse =
-    0.92 *
-    diffuseAmount *
-    baseColor;
-
-
-  vec3 specular =
-    0.65 *
-    specularAmount *
-    vec3(1.0);
-
-
-  vec3 finalColor =
-    ambient +
-    diffuse +
-    specular;
-
-
-  fragColor =
-    vec4(
-      finalColor,
-      1.0
-    );
+  vec3 lightDir = normalize(uLightPosition - fragmentPosition);
+  vec3 viewDir = normalize(-fragmentPosition);
+  float ndotl = max(dot(n, lightDir), 0.0);
+  float spec = 0.0;
+  if (ndotl > 0.0) {
+    vec3 halfVector = normalize(lightDir + viewDir);
+    spec = pow(max(dot(n, halfVector), 0.0), 48.0);
+  }
+  vec3 base = volatilityColor(fragmentIV);
+  vec3 color = .12 * base + uLightIntensity * (.82 * ndotl * base + .45 * spec * vec3(1.0));
+  fragColor = vec4(color, 1.0);
 }
