@@ -252,5 +252,9 @@ export class Renderer {
     this.gridResources = null;
     this.currentMesh = null;
     this.selectedPoint = null;
+    this.surfaceShader?.dispose();
+    this.lineShader?.dispose();
+    this.surfaceShader = null;
+    this.lineShader = null;
   }
 }

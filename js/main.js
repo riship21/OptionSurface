@@ -5,6 +5,16 @@ async function main() {
   const canvas = document.getElementById('glCanvas');
   const status = document.getElementById('status');
   let renderer;
+  let running = false;
+  canvas.addEventListener('webglcontextlost', event => {
+    event.preventDefault();
+    running = false;
+    status.textContent = 'WebGL context lost. Waiting for the browser to restore graphics...';
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    // Reload is intentional: reconstruct shaders, buffers and camera listeners once.
+    window.location.reload();
+  });
   try {
     renderer = new Renderer(canvas);
     await renderer.initialize();
@@ -79,14 +89,20 @@ async function main() {
       intensityValue.textContent = Number(lightIntensity.value).toFixed(1);
     });
     status.textContent = 'Left-drag: orbit · Right/Shift-drag: pan · Scroll: zoom.';
-    let running = true;
+    running = true;
     function frame() {
       if (!running) return;
-      renderer.render();
-      const p=renderer.selectedScreenPosition();
-      marker.hidden=!p;
-      if(p) { marker.style.left=`${p.x}px`; marker.style.top=`${p.y}px`; }
-      requestAnimationFrame(frame);
+      try {
+        renderer.render();
+        const p=renderer.selectedScreenPosition();
+        marker.hidden=!p;
+        if(p) { marker.style.left=`${p.x}px`; marker.style.top=`${p.y}px`; }
+        requestAnimationFrame(frame);
+      } catch (error) {
+        running = false;
+        console.error(error);
+        status.textContent = `Rendering error: ${error.message}`;
+      }
     }
     requestAnimationFrame(frame);
     window.addEventListener('pagehide', () => { running = false; renderer.dispose(); }, {once:true});
